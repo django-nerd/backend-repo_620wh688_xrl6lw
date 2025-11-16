@@ -1,48 +1,54 @@
 """
-Database Schemas
+Database Schemas for Food Court Ordering System
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model below corresponds to a MongoDB collection.
+The collection name is the lowercase class name (e.g., User -> "user").
 """
+from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, EmailStr
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="Unique email address")
+    password_hash: str = Field(..., description="BCrypt password hash")
+    is_admin: bool = Field(False, description="Admin privileges")
+    avatar_url: Optional[str] = None
+    is_active: bool = True
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Category(BaseModel):
+    name: str = Field(..., description="Category name")
+    description: Optional[str] = Field(None, description="Category description")
+    image_url: Optional[str] = None
+    is_active: bool = True
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+
+class Fooditem(BaseModel):
+    title: str = Field(..., description="Item title")
+    description: Optional[str] = None
+    price: float = Field(..., ge=0)
+    category_id: str = Field(..., description="Reference to category _id")
+    image_url: Optional[str] = None
+    tags: List[str] = []
+    is_available: bool = True
+    rating: float = 0.0
+
+
+class Order(BaseModel):
+    user_id: Optional[str] = Field(None, description="User placing the order (optional for guest)")
+    order_number: str = Field(..., description="Human-friendly order number")
+    items: List[dict] = Field(..., description="List of {item_id, title, price, quantity, image_url}")
+    subtotal: float = 0.0
+    tax: float = 0.0
+    total: float = 0.0
+    status: Literal["pending", "preparing", "ready", "completed", "cancelled"] = "pending"
+    notes: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    pickup_name: Optional[str] = None
+"""
+Notes:
+- Define new collections by creating new Pydantic classes in this file.
+- The system will use these schemas for validation and documentation.
+"""
